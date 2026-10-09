@@ -1,0 +1,151 @@
+import java.io.*;
+import java.util.*;
+
+/**
+ * Logica de negocio + persistencia (Ejercicios 1 y 2).
+ * Cada operacion que modifica la lista guarda el archivo al instante.
+ */
+public class Gestor {
+    public enum Atributo { VIDA, ATAQUE, DEFENSA, ALCANCE }
+
+    private final List<Personaje> personajes = new ArrayList<>();
+    private final File archivo;
+
+    public Gestor(String rutaArchivo) {
+        this.archivo = new File(rutaArchivo);
+        cargar();
+    }
+
+    // ---------- Persistencia ----------
+
+    private void cargar() {
+        if (!archivo.exists()) return; // primera ejecucion: se creara al guardar
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.trim().isEmpty()) continue;
+                try {
+                    Personaje p = Personaje.desdeLinea(linea);
+                    if (buscar(p.getNombre()) == null) personajes.add(p);
+                } catch (IllegalArgumentException e) {
+                    // Una linea corrupta no debe tumbar toda la carga.
+                    System.out.println("Linea ignorada: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error al leer el archivo: " + e.getMessage());
+        }
+    }
+
+    private void guardar() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(archivo))) {
+            for (Personaje p : personajes) pw.println(p.toLinea());
+        } catch (IOException e) {
+            System.out.println("Error al guardar el archivo: " + e.getMessage());
+        }
+    }
+
+    // ---------- Ejercicio 1: CRUD ----------
+
+    public Personaje buscar(String nombre) {
+        for (Personaje p : personajes) {
+            if (p.getNombre().equalsIgnoreCase(nombre.trim())) return p;
+        }
+        return null;
+    }
+
+    /** @return false si el nombre ya existe (validacion de unicidad). */
+    public boolean anadir(Personaje nuevo) {
+        if (buscar(nuevo.getNombre()) != null) return false;
+        personajes.add(nuevo);
+        guardar();
+        return true;
+    }
+
+    public void mostrar() {
+        if (personajes.isEmpty()) {
+            System.out.println("(No hay personajes registrados)");
+            return;
+        }
+        for (Personaje p : personajes) System.out.println(p);
+    }
+
+    /** Modifica todos los valores de un personaje existente. */
+    public boolean modificar(String nombre, int vida, int ataque, int defensa, int alcance) {
+        Personaje p = buscar(nombre);
+        if (p == null) return false;
+        // Se validan todos primero sobre una copia; asi, si algo falla, no queda a medias.
+        Personaje prueba = new Personaje(p.getNombre(), vida, ataque, defensa, alcance);
+        p.setVida(prueba.getVida());
+        p.setAtaque(prueba.getAtaque());
+        p.setDefensa(prueba.getDefensa());
+        p.setAlcance(prueba.getAlcance());
+        guardar();
+        return true;
+    }
+
+    public boolean borrar(String nombre) {
+        Personaje p = buscar(nombre);
+        if (p == null) return false;
+        personajes.remove(p);
+        guardar();
+        return true;
+    }
+
+    // ---------- Ejercicio 2: nuevas funcionalidades ----------
+
+    /** (1) Actualizar un solo atributo. */
+    public boolean actualizarAtributo(String nombre, Atributo attr, int valor) {
+        Personaje p = buscar(nombre);
+        if (p == null) return false;
+        switch (attr) {
+            case VIDA: p.setVida(valor); break;
+            case ATAQUE: p.setAtaque(valor); break;
+            case DEFENSA: p.setDefensa(valor); break;
+            case ALCANCE: p.setAlcance(valor); break;
+        }
+        guardar();
+        return true;
+    }
+
+    /** (2) Mostrar ordenado por un atributo (mayor a menor). No altera la lista original. */
+    public void mostrarOrdenadoPor(Atributo attr) {
+        List<Personaje> copia = new ArrayList<>(personajes);
+        copia.sort((a, b) -> Integer.compare(valor(b, attr), valor(a, attr)));
+        if (copia.isEmpty()) System.out.println("(No hay personajes registrados)");
+        for (Personaje p : copia) System.out.println(p);
+    }
+
+    private int valor(Personaje p, Atributo attr) {
+        switch (attr) {
+            case VIDA: return p.getVida();
+            case ATAQUE: return p.getAtaque();
+            case DEFENSA: return p.getDefensa();
+            default: return p.getAlcance();
+        }
+    }
+
+    /** (3) Conteo total y promedio de cada atributo. */
+    public void mostrarEstadisticas() {
+        int n = personajes.size();
+        System.out.println("Total de personajes: " + n);
+        if (n == 0) return;
+        for (Atributo a : Atributo.values()) {
+            double suma = 0;
+            for (Personaje p : personajes) suma += valor(p, a);
+            System.out.printf("Promedio de %s: %.2f%n", a.name().toLowerCase(), suma / n);
+        }
+    }
+
+    /** (4) Carga los 3 perfiles de prueba del MVP; los que ya existan se omiten. */
+    public int cargarPredefinidos() {
+        Personaje[] base = {
+            new Personaje("Caballero", 4, 2, 4, 1), // tanque
+            new Personaje("Guerrero", 3, 4, 2, 4),  // DPS estandar
+            new Personaje("Arquero", 2, 4, 1, 8)    // glass cannon
+        };
+        int añadidos = 0;
+        for (Personaje p : base) if (anadir(p)) añadidos++;
+        return añadidos;
+    }
+}

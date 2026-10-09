@@ -1,0 +1,66 @@
+package Ejer_1;
+
+public class Personaje {
+    private String nombre;
+    private int vida;
+    private int ataque;
+    private int defensa;
+    private int alcance;
+
+    public Personaje(String nombre, int vida, int ataque, int defensa, int alcance) {
+        setNombre(nombre);
+        setVida(vida);
+        setAtaque(ataque);
+        setDefensa(defensa);
+        setAlcance(alcance);
+    }
+    private static int validar(String campo, int valor) {
+        if (valor <= 0) {
+            throw new IllegalArgumentException(campo + " debe ser un entero mayor a cero (recibido: " + valor + ")");
+        }
+        return valor;
+    }
+
+    public String getNombre() { return nombre; }
+    public int getVida() { return vida; }
+    public int getAtaque() { return ataque; }
+    public int getDefensa() { return defensa; }
+    public int getAlcance() { return alcance; }
+
+    public void setNombre(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre no puede estar vacio");
+        }
+        if (nombre.contains(";")) {
+            throw new IllegalArgumentException("El nombre no puede contener ';'");
+        }
+        this.nombre = nombre.trim();
+    }
+    public void setVida(int vida) { this.vida = validar("vida", vida); }
+    public void setAtaque(int ataque) { this.ataque = validar("ataque", ataque); }
+    public void setDefensa(int defensa) { this.defensa = validar("defensa", defensa); }
+    public void setAlcance(int alcance) { this.alcance = validar("alcance", alcance); }
+
+    public String toLinea() {
+        return nombre + ";" + vida + ";" + ataque + ";" + defensa + ";" + alcance;
+    }
+
+    public static Personaje desdeLinea(String linea) {
+        String[] p = linea.split(";");
+        if (p.length != 5) {
+            throw new IllegalArgumentException("Formato invalido: " + linea);
+        }
+        try {
+            return new Personaje(p[0], Integer.parseInt(p[1].trim()), Integer.parseInt(p[2].trim()),
+                    Integer.parseInt(p[3].trim()), Integer.parseInt(p[4].trim()));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Valor numerico invalido en: " + linea);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%-12s | Vida: %2d | Ataque: %2d | Defensa: %2d | Alcance: %2d",
+                nombre, vida, ataque, defensa, alcance);
+    }
+}

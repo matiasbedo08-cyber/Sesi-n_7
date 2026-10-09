@@ -1,0 +1,48 @@
+package Ejer_3;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+public class ContadorPalabras {
+    private static final int TOP = 10;
+
+    public static void main(String[] args) {
+        SelectorArchivo selector = new SelectorArchivo();
+        LectorArchivo lector = new LectorArchivo();
+        File archivo = null;
+        List<String> lineas = null;
+
+        while (lineas == null) {
+            archivo = selector.seleccionar();
+            if (archivo == null) {
+                System.out.println("No se selecciono ningun archivo. Fin del programa.");
+                return;
+            }
+            try {
+                lineas = lector.leerLineas(archivo);
+            } catch (FileNotFoundException e) {
+                selector.mostrarError("El archivo no existe: " + archivo.getName());
+            } catch (IOException e) {
+                selector.mostrarError("Error al leer el archivo: " + e.getMessage());
+            }
+        }
+
+        mostrar(archivo, new Estadisticas(lineas));
+    }
+
+    private static void mostrar(File archivo, Estadisticas est) {
+        System.out.println("\n=== ESTADISTICAS DE " + archivo.getName() + " ===");
+        System.out.println("Total de lineas:      " + est.getTotalLineas());
+        System.out.println("Total de palabras:    " + est.getTotalPalabras());
+        System.out.println("Total de caracteres:  " + est.getTotalCaracteres());
+        System.out.printf("Promedio palabras/linea: %.2f%n", est.getPromedioPalabrasPorLinea());
+        System.out.println("\nPalabras mas frecuentes:");
+        int i = 1;
+        for (Map.Entry<String, Integer> e : est.getMasFrecuentes(TOP)) {
+            System.out.printf("%2d. %-15s %d%n", i++, e.getKey(), e.getValue());
+        }
+    }
+}
